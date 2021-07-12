@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Craftplacer.Windows.VisualStyles/**'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1
+
+    - name: Build
+      run: msbuild -noLogo -p:Configuration=Release
+      working-directory: ./Craftplacer.Windows.VisualStyles/
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v2.2.3
+      with:
+        name: binaries
+        path: './Craftplacer.Windows.VisualStyles/bin/Release'
+ 
+    - name: Setup NuGet
+      uses: nuget/setup-nuget@v1
+      with:
+        nuget-api-key: ${{ secrets.NuGetAPIKey }}
+        nuget-version: '5.x'
+
+    - name: Restore
+      run: nuget restore 'Craftplacer.Windows.VisualStyles.sln'
+      
+    - name: Pack
+      run: nuget pack './Craftplacer.Windows.VisualStyles/Craftplacer.Windows.VisualStyles.nuspec'
+      
+    - name: Upload NuGet package as artifact
+      uses: actions/upload-artifact@v2.2.3
+      with:
+        name: nuget
+        path: './Craftplacer.Windows.VisualStyles.*.nupkg'
+    
+    - name: Push
+      run: nuget push Craftplacer.Windows.VisualStyles.*.nupkg ${{ secrets.NuGetAPIKey }} -Source https://api.nuget.org/v3/index.json -SkipDuplicate
