@@ -9,22 +9,23 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1
+
+    - name: Setup .NET Core SDK
+      uses: actions/setup-dotnet@v1.8.1
+      with:
+        dotnet-version: 5.0.x
 
     - name: Build
-      run: msbuild -noLogo -p:Configuration=Release
-      working-directory: ./Craftplacer.Windows.VisualStyles/
+      run: dotnet build -c Release --nologo Craftplacer.Windows.VisualStyles.sln
       
     - name: Upload build artifacts
       uses: actions/upload-artifact@v2.2.3
       with:
         name: binaries
-        path: './Craftplacer.Windows.VisualStyles/bin/Release'
+        path: './Craftplacer.Windows.VisualStyles/bin/Release/net5.0'
  
     - name: Setup NuGet
       uses: nuget/setup-nuget@v1
@@ -32,9 +33,6 @@ jobs:
         nuget-api-key: ${{ secrets.NuGetAPIKey }}
         nuget-version: '5.x'
 
-    - name: Restore
-      run: nuget restore 'Craftplacer.Windows.VisualStyles.sln'
-      
     - name: Pack
       run: nuget pack './Craftplacer.Windows.VisualStyles/Craftplacer.Windows.VisualStyles.nuspec'
       
