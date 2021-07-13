@@ -1,15 +1,14 @@
 ﻿using Craftplacer.Windows.VisualStyles.Attributes;
 
-using IniParser.Model;
-
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace Craftplacer.Windows.VisualStyles
 {
     internal static class Helpers
     {
-        public static void DeserializeFromIni<T>(T obj, KeyDataCollection data)
+        public static void DeserializeFromIni<T>(T obj, Dictionary<string, string> data)
         {
             var properties = typeof(T).GetProperties();
 

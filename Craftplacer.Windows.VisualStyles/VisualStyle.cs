@@ -1,8 +1,7 @@
-﻿using IniParser.Model;
-using IniParser.Model.Configuration;
-using IniParser.Parser;
+﻿using Craftplacer.Windows.VisualStyles.Ini;
 
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -23,14 +22,7 @@ namespace Craftplacer.Windows.VisualStyles
     {
         private readonly SafeHINSTANCE hModule;
         private bool disposedValue;
-        private IniData themeIni;
-        private static readonly IniParserConfiguration iniParserConfig = new()
-        {
-            CaseInsensitive = true,
-            AllowDuplicateKeys = true,
-            AllowDuplicateSections = true,
-            OverrideDuplicateKeys = true,
-        };
+        private IniFile themeIni;
 
         public VisualStyle(string vsPath)
         {
@@ -44,7 +36,7 @@ namespace Craftplacer.Windows.VisualStyles
             var buffer = LoadResource("THEMES_INI", "TEXTFILE");
             var text = Encoding.Unicode.GetString(buffer);
             text = FilterComments(text);
-            themeIni = new IniDataParser(iniParserConfig).Parse(text);
+            themeIni = IniParser.Parse(text);
             var docsSection = themeIni["documentation"];
             DisplayName = docsSection["DisplayName"];
             ToolTip = docsSection["ToolTip"];
@@ -195,7 +187,7 @@ namespace Craftplacer.Windows.VisualStyles
 
             text = FilterComments(text);
 
-            var colorSchemeIni = new IniDataParser(iniParserConfig).Parse(text);
+            var colorSchemeIni = IniParser.Parse(text);
 
             return new(this, colorSchemeIni);
         }
