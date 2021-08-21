@@ -1,37 +1,76 @@
-﻿using Craftplacer.Windows.VisualStyles.Enums;
+﻿using System.Drawing;
 
-using System;
-using System.Drawing;
-
-using Vanara.PInvoke;
-
-using static Vanara.PInvoke.ComCtl32;
-using static Vanara.PInvoke.Gdi32;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.Graphics.Gdi;
 
 namespace Craftplacer.Windows.VisualStyles
 {
     public static class Extensions
     {
-        public static int Get0BGR(Color rgbColor)
+        public static void DrawElement(this Graphics graphics, Element element, Rectangle bounds, int? imageIndex = null)
         {
-            // Return a zero-alpha 24-bit BGR color integer
-            return (0 << 24) + (rgbColor.B << 16) + (rgbColor.G << 8) + rgbColor.R;
+            Bitmap bitmap;
+
+            if (imageIndex.HasValue)
+            {
+                bitmap = element.GetBitmaps()[imageIndex.Value];
+            }
+            else
+            {
+                bitmap = element.Image;
+            }
+
+            Rectangle rect = new Rectangle(Point.Empty, bitmap.Size);
+            NinePatchGeometry geometry = new NinePatchGeometry(element.SizingMargins.Value, rect);
+            graphics.DrawNinePatch(bitmap, geometry, bounds, element.SizingType == SizingType.Tile);
         }
 
         public static void DrawString(this Graphics graphics, Element element, string s, int x, int y, int w, int h)
         {
             if (element.TextShadowType == TextShadowType.Continuous)
             {
-                var textColor = (uint)Get0BGR(element.TextColor.Value);
-                var shadowColor = (uint)Get0BGR(element.TextShadowColor.Value);
+                uint textColor = (uint)Get0BGR(element.TextColor.Value);
+                uint shadowColor = (uint)Get0BGR(element.TextShadowColor.Value);
 
-                var rect = new RECT(x, y, x + w, y + h);
-                var hdc = graphics.GetHdc();
+                HDC hdc = new HDC(graphics.GetHdc());
+                HGDIOBJ hFont = new HGDIOBJ(element.Font.ToHfont());
 
-                SelectObject(hdc, element.Font.ToHfont());
-                SetTextColor(hdc, textColor);
-                DrawShadowText(hdc, s, (uint)s.Length, rect, 0, textColor, shadowColor, element.TextShadowOffset.X, element.TextShadowOffset.Y);
-                graphics.ReleaseHdc(hdc);
+                try
+                {
+                    PInvoke.SelectObject(hdc, hFont);
+                    PInvoke.SetTextColor(hdc, textColor);
+
+                    RECT rect = new RECT
+                    {
+                        left = x,
+                        top = y,
+                        right = x + w,
+                        bottom = y + h
+                    };
+
+                    unsafe
+                    {
+                        fixed (char* pszText = s)
+                        {
+                            PInvoke.DrawShadowText(
+                                hdc,
+                                pszText,
+                                (uint)s.Length,
+                                &rect,
+                                0,
+                                textColor,
+                                shadowColor,
+                                element.TextShadowOffset.X,
+                                element.TextShadowOffset.Y);
+                        }
+                    }
+                }
+                finally
+                {
+                    PInvoke.DeleteObject(hFont);
+                    graphics.ReleaseHdc(hdc);
+                }
             }
             else
             {
@@ -40,29 +79,9 @@ namespace Craftplacer.Windows.VisualStyles
             }
         }
 
-        public static void DrawElement(this Graphics graphics, Element element, Rectangle bounds, int? imageIndex = null)
-        {
-            var bitmap = element.Image;
-
-            var srcRect = new Rectangle(Point.Empty, bitmap.Size);
-
-            if (imageIndex.HasValue)
-            {
-                switch (element.ImageLayout)
-                {
-                    case Orientation.Horizontal:
-                        throw new NotImplementedException();
-
-                    case Orientation.Vertical:
-                        var actualHeight = bitmap.Height / element.ImageCount;
-                        var top = actualHeight * imageIndex.Value;
-                        srcRect = new Rectangle(0, top, bitmap.Width, actualHeight);
-                        break;
-                }
-            }
-
-            var geometry = new NinePatchGeometry(element.SizingMargins.Value, srcRect);
-            graphics.DrawNinePatch(bitmap, geometry, bounds, element.SizingType == SizingType.Tile);
-        }
+        /// <summary>
+        /// Returns a zero-alpha 24-bit BGR color integer
+        /// </summary>
+        public static int Get0BGR(Color color) => (0 << 24) + (color.B << 16) + (color.G << 8) + color.R;
     }
 }

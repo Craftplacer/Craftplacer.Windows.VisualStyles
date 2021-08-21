@@ -2,23 +2,21 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using static Craftplacer.Windows.VisualStyles.Helpers;
 
 namespace Craftplacer.Windows.VisualStyles
 {
     public class ColorScheme
     {
         private readonly IniFile ini;
-        private Dictionary<string, Element> sectionCache = new();
-
-        public VisualStyle VisualStyle { get; }
+        private readonly Dictionary<string, Element> sectionCache = new Dictionary<string, Element>();
 
         internal ColorScheme(VisualStyle visualStyle, IniFile ini)
         {
             VisualStyle = visualStyle;
             this.ini = ini ?? throw new ArgumentNullException(nameof(ini));
         }
+
+        public VisualStyle VisualStyle { get; }
 
         public Element this[string sectionName]
         {
@@ -38,7 +36,7 @@ namespace Craftplacer.Windows.VisualStyles
         private Element CreateElement(IniSection section)
         {
             var element = new Element(this);
-            DeserializeFromIni(element, section.Values);
+            IniSerializer.DeserializeFromIni(element, section.Values);
             return element;
         }
     }

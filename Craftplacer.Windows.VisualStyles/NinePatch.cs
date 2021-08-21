@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace Craftplacer.Windows.VisualStyles
 {
@@ -21,7 +22,32 @@ namespace Craftplacer.Windows.VisualStyles
                     continue;
                 }
 
-                graphics.DrawImage(image, dstRect, srcRect, GraphicsUnit.Pixel);
+                if (tile)
+                {
+                    Bitmap bitmap = (Bitmap)image;
+                    Bitmap bitmapCrop = bitmap.Clone(srcRect, image.PixelFormat);
+                    using (var textureBrush = new TextureBrush(bitmapCrop, WrapMode.Tile))
+                    {
+                        // We use transforms so the results are identical:
+                        //
+                        // If we would run this method without transforms
+                        // on two different positions, the start of the
+                        // bitmap would look different. This is because
+                        // each paint function is acting like a stencil
+                        // for a Brush (in this case TextureBrush).
+
+                        graphics.TranslateTransform(dstRect.X, dstRect.Y);
+
+                        Rectangle rect = new Rectangle(Point.Empty, dstRect.Size);
+                        graphics.FillRectangle(textureBrush, rect);
+
+                        graphics.ResetTransform();
+                    }
+                }
+                else
+                {
+                    graphics.DrawImage(image, dstRect, srcRect, GraphicsUnit.Pixel);
+                }
             }
         }
     }

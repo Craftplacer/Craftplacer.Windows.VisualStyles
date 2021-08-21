@@ -11,8 +11,14 @@ namespace Craftplacer.Windows.VisualStyles
         public Padding Padding;
         public Rectangle Rectangle;
 
-        public int[] Horizontals => new int[]
+        public NinePatchGeometry(Padding padding, Rectangle rectangle)
         {
+            Padding = padding;
+            Rectangle = rectangle;
+        }
+
+        public int[] Horizontals => new int[]
+                {
             Rectangle.X,
             Rectangle.Left + Padding.Left,
             Rectangle.Right - Padding.Right,
@@ -26,12 +32,6 @@ namespace Craftplacer.Windows.VisualStyles
             Rectangle.Bottom - Padding.Bottom,
             Rectangle.Bottom
         };
-
-        public NinePatchGeometry(Padding padding, Rectangle rectangle)
-        {
-            Padding = padding;
-            Rectangle = rectangle;
-        }
 
         public Rectangle[] GetRectangles()
         {

@@ -1,0 +1,10 @@
+﻿RECT
+SelectObject
+SetTextColor
+DrawShadowText
+FindResource
+LoadResource
+SizeofResource
+LoadLibraryEx
+FreeLibrary
+DeleteObject

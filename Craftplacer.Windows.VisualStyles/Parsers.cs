@@ -8,19 +8,14 @@ namespace Craftplacer.Windows.VisualStyles
     {
         private static readonly char[] separatorValues = new char[2] { ',', ' ' };
 
-        internal static Padding? ParsePadding(string value)
+        internal static bool ParseBool(string value, bool @default)
         {
-            if (value == null)
+            if (bool.TryParse(value, out var result))
             {
-                return null;
+                return result;
             }
 
-            var values = value
-                .Split(separatorValues, StringSplitOptions.RemoveEmptyEntries)
-                .Select((v) => int.Parse(v))
-                .ToArray();
-
-            return new(values[0], values[2], values[1], values[3]);
+            return @default;
         }
 
         internal static Color? ParseColor(string value)
@@ -36,16 +31,6 @@ namespace Craftplacer.Windows.VisualStyles
                 .ToArray();
 
             return Color.FromArgb(values[0], values[1], values[2]);
-        }
-
-        internal static bool ParseBool(string value, bool @default)
-        {
-            if (bool.TryParse(value, out var result))
-            {
-                return result;
-            }
-
-            return @default;
         }
 
         internal static int ParseInt(string value, int @default)
@@ -73,6 +58,21 @@ namespace Craftplacer.Windows.VisualStyles
             }
 
             return Point.Empty;
+        }
+
+        internal static Padding? ParsePadding(string value)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            var values = value
+                .Split(separatorValues, StringSplitOptions.RemoveEmptyEntries)
+                .Select((v) => int.Parse(v))
+                .ToArray();
+
+            return new Padding(values[0], values[2], values[1], values[3]);
         }
     }
 }

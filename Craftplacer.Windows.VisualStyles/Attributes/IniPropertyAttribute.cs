@@ -3,8 +3,10 @@
 namespace Craftplacer.Windows.VisualStyles.Attributes
 {
     [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
-    sealed class IniPropertyAttribute : Attribute
+    internal sealed class IniPropertyAttribute : Attribute
     {
+        public readonly string Name;
+
         public IniPropertyAttribute()
         {
         }
@@ -13,8 +15,6 @@ namespace Craftplacer.Windows.VisualStyles.Attributes
         {
             Name = name;
         }
-
-        public readonly string Name;
 
         public string DefaultValue { get; set; }
     }

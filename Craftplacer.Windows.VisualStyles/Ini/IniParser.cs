@@ -9,14 +9,14 @@ namespace Craftplacer.Windows.VisualStyles.Ini
     {
         private static readonly Regex SectionRegex = new Regex(@"^\[(\w*)\]", RegexOptions.Compiled);
 
-        public static IniFile Parse(string iniData) => new(ParseSections(iniData));
+        public static IniFile Parse(string iniData) => new IniFile(ParseSections(iniData));
 
         private static IEnumerable<IniSection> ParseSections(string iniData)
         {
             var lines = iniData.Split(Environment.NewLine);
 
             string sectionName = null;
-            Dictionary<string, string> values = new();
+            Dictionary<string, string> values = new Dictionary<string, string>();
 
             bool finishSection(out IniSection section)
             {
@@ -27,7 +27,7 @@ namespace Craftplacer.Windows.VisualStyles.Ini
                 }
                 else
                 {
-                    section = new(sectionName, values);
+                    section = new IniSection(sectionName, values);
                     return true;
                 }
             }
@@ -50,7 +50,7 @@ namespace Craftplacer.Windows.VisualStyles.Ini
                     }
 
                     sectionName = sectionMatch.Captures.First().Value;
-                    values = new();
+                    values = new Dictionary<string, string>();
 
                     continue;
                 }
@@ -66,6 +66,6 @@ namespace Craftplacer.Windows.VisualStyles.Ini
             {
                 yield return endSection;
             }
-        }   
+        }
     }
 }

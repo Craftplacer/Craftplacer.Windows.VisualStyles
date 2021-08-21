@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>Craftplacer.Windows.VisualStyles</id>
-    <version>1.0.0.1</version>
+    <version>1.1.0.0</version>
     <title>Craftplacer.Windows.VisualStyles</title>
     <authors>Craftplacer</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>

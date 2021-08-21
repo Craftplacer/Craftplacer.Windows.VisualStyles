@@ -1,7 +1,7 @@
 ﻿using Craftplacer.Windows.VisualStyles.Ini;
 
 using System;
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -9,9 +9,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
-using Vanara.PInvoke;
-
-using static Vanara.PInvoke.Kernel32;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.System.LibraryLoader;
 
 namespace Craftplacer.Windows.VisualStyles
 {
@@ -20,15 +20,21 @@ namespace Craftplacer.Windows.VisualStyles
     /// </summary>
     public class VisualStyle : IDisposable
     {
-        private readonly SafeHINSTANCE hModule;
+        private readonly HINSTANCE hModule;
+        private readonly IniFile themeIni;
         private bool disposedValue;
-        private IniFile themeIni;
 
         public VisualStyle(string vsPath)
         {
-            hModule = LoadLibraryEx(vsPath, LoadLibraryExFlags.LOAD_LIBRARY_AS_DATAFILE);
+            unsafe
+            {
+                fixed (char* lpLibFileName = vsPath)
+                {
+                    hModule = PInvoke.LoadLibraryEx(lpLibFileName, new HANDLE(), LOAD_LIBRARY_FLAGS.LOAD_LIBRARY_AS_DATAFILE);
+                }
+            }
 
-            if (hModule.IsNull || hModule.IsInvalid)
+            if (hModule.IsNull)
             {
                 throw new ArgumentException("Couldn't load the specified visual style.", nameof(vsPath));
             }
@@ -57,18 +63,8 @@ namespace Craftplacer.Windows.VisualStyles
             Dispose(disposing: false);
         }
 
-        private byte[] LoadResource(string resourceName, string resourceType)
-        {
-            var hResInfo = FindResource(hModule, resourceName, resourceType);
-            var hResData = Kernel32.LoadResource(hModule, hResInfo);
-            var resSize = SizeofResource(hModule, hResInfo);
+        public string Author { get; private set; }
 
-            var buffer = new byte[resSize];
-            Marshal.Copy(hResData.DangerousGetHandle(), buffer, 0, buffer.Length);
-
-            return buffer;
-        }
-        
         public string[] ColorNames
         {
             get
@@ -80,6 +76,16 @@ namespace Craftplacer.Windows.VisualStyles
             }
         }
 
+        public string Company { get; private set; }
+
+        public string Copyright { get; private set; }
+
+        public string Description { get; private set; }
+
+        public string DisplayName { get; private set; }
+
+        public DateTime LastUpdated { get; private set; }
+
         public string[] SizeNames
         {
             get
@@ -89,10 +95,62 @@ namespace Craftplacer.Windows.VisualStyles
                 var colorNames = text.Split('\0', StringSplitOptions.RemoveEmptyEntries);
                 return colorNames;
             }
-
         }
 
-        
+        public string ThemeName { get; private set; }
+
+        public string ToolTip { get; private set; }
+
+        public Uri URL { get; private set; }
+
+        /// <summary>
+        /// Name of the accompanying Windows Media Player skin.
+        /// </summary>
+        public string WmpSkinName { get; private set; }
+
+        /// <summary>
+        /// Converts a visual style file path into a resource name.
+        /// </summary>
+        /// <param name="filePath">A file path (like "Blue\button.bmp")</param>
+        /// <returns>The translated resource name (like "BLUE_BUTTON_BMP")</returns>
+        public static string GetResourceName(string filePath)
+        {
+            var invalidChars = Path.GetInvalidFileNameChars().Append('.');
+            var filteredFilePathChars = filePath.Select((c) => invalidChars.Contains(c) ? '_' : c);
+            var filteredFilePath = new string(filteredFilePathChars.ToArray());
+            return filteredFilePath.ToUpperInvariant();
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        public (string DisplayName, string ToolTip) GetColorDisplay(string colorName)
+        {
+            var section = themeIni["ColorScheme." + colorName];
+            return (section["DisplayName"], section["ToolTip"]);
+        }
+
+        public ColorScheme GetColorScheme(string iniFileName)
+        {
+            var buffer = LoadResource(iniFileName, "TEXTFILE");
+            var text = Encoding.Unicode.GetString(buffer);
+
+            text = FilterComments(text);
+
+            var colorSchemeIni = IniParser.Parse(text);
+
+            return new ColorScheme(this, colorSchemeIni);
+        }
+
+        public ColorScheme GetColorScheme(string colorName, string sizeName)
+        {
+            var fileResName = GetIniName(colorName, sizeName);
+            return GetColorScheme(fileResName);
+        }
+
         public ColorScheme[] GetColorSchemes()
         {
             var colorSchemes = new ColorScheme[ColorNames.Length * SizeNames.Length];
@@ -108,6 +166,42 @@ namespace Craftplacer.Windows.VisualStyles
             return colorSchemes;
         }
 
+        public (string DisplayName, string ToolTip) GetSizeDisplay(string sizeName)
+        {
+            var section = themeIni["Size." + sizeName];
+            return (section["DisplayName"], section["ToolTip"]);
+        }
+
+        public Bitmap LoadBitmap(string filePath)
+        {
+            var resourceName = GetResourceName(filePath);
+            return Bitmap.FromResource(hModule.Value, resourceName);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
+
+                if (!PInvoke.FreeLibrary(hModule))
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        // HACK: fuck ini parsers not handling comments correctly
+        private static string FilterComments(string value)
+        {
+            return Regex.Replace(value, @";(.*)", string.Empty);
+        }
+
         private string GetIniName(string colorName, string sizeName)
         {
             var colorIndex = Array.IndexOf(ColorNames, colorName);
@@ -121,98 +215,26 @@ namespace Craftplacer.Windows.VisualStyles
             return fileResNames[fileResIndex];
         }
 
-
-
-        public string Author { get; private set; }
-        public string Company { get; private set; }
-        public string Copyright { get; private set; }
-        public string Description { get; private set; }
-        public string DisplayName { get; private set; }
-        public DateTime LastUpdated { get; private set; }
-        public string ThemeName { get; private set; }
-        public string ToolTip { get; private set; }
-        public Uri URL { get; private set; }
-
-        /// <summary>
-        /// Name of the accompanying Windows Media Player skin.
-        /// </summary>
-        public string WmpSkinName { get; private set; }
-
-        public void Dispose()
+        private byte[] LoadResource(string resourceName, string resourceType)
         {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
+            HRSRC hResInfo;
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
+            unsafe
             {
-                if (disposing)
+                fixed (char* lpName = resourceName)
+                fixed (char* lpType = resourceType)
                 {
-                    // TODO: dispose managed state (managed objects)
+                    hResInfo = PInvoke.FindResource(hModule, lpName, lpType);
                 }
-
-                hModule.Dispose();
-
-                disposedValue = true;
             }
-        }
 
-        /// <summary>
-        /// Converts a visual style file path into a resource name.
-        /// </summary>
-        /// <param name="filePath">A file path (like "Blue\button.bmp")</param>
-        /// <returns>The translated resource name (like "BLUE_BUTTON_BMP")</returns>
-        public static string GetResourceName(string filePath)
-        {
-            var invalidChars = Path.GetInvalidFileNameChars().Append('.');
-            var filteredFilePathChars = filePath.Select((c) => invalidChars.Contains(c) ? '_' : c);
-            var filteredFilePath = new string(filteredFilePathChars.ToArray());
-            return filteredFilePath.ToUpperInvariant();
-        }
+            var hResData = PInvoke.LoadResource(hModule, hResInfo);
+            var resSize = PInvoke.SizeofResource(hModule, hResInfo);
 
+            var buffer = new byte[resSize];
+            Marshal.Copy((IntPtr)hResData.ToInt32(), buffer, 0, buffer.Length);
 
-
-        public Bitmap LoadBitmap(string filePath)
-        {
-            var resourceName = GetResourceName(filePath);
-            return Bitmap.FromResource(hModule.DangerousGetHandle(), resourceName);
-        }
-
-        public ColorScheme GetColorScheme(string iniFileName)
-        {
-            var buffer = LoadResource(iniFileName, "TEXTFILE");
-            var text = Encoding.Unicode.GetString(buffer);
-
-            text = FilterComments(text);
-
-            var colorSchemeIni = IniParser.Parse(text);
-
-            return new(this, colorSchemeIni);
-        }
-
-        public ColorScheme GetColorScheme(string colorName, string sizeName)
-        {
-            var fileResName = GetIniName(colorName, sizeName);
-            return GetColorScheme(fileResName);
-        }
-
-        // HACK: fuck ini parsers not handling comments correctly
-        private static string FilterComments(string value)
-        {
-            return Regex.Replace(value, @";(.*)", string.Empty);
-        }
-
-        public (string DisplayName, string ToolTip) GetSizeDisplay(string sizeName)
-        {
-            var section = themeIni["Size." + sizeName];
-            return (section["DisplayName"], section["ToolTip"]);
-        }
-        public (string DisplayName, string ToolTip) GetColorDisplay(string colorName)
-        {
-            var section = themeIni["ColorScheme." + colorName];
-            return (section["DisplayName"], section["ToolTip"]);
+            return buffer;
         }
     }
 }
