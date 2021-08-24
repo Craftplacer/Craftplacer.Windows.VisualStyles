@@ -7,13 +7,13 @@ namespace Craftplacer.Windows.VisualStyles
 {
     public class ColorScheme
     {
-        private readonly IniFile ini;
-        private readonly Dictionary<string, Element> sectionCache = new Dictionary<string, Element>();
+        private readonly IniFile _ini;
+        private readonly Dictionary<string, Element> _sectionCache = new Dictionary<string, Element>();
 
         internal ColorScheme(VisualStyle visualStyle, IniFile ini, string colorName, string sizeName)
         {
             VisualStyle = visualStyle;
-            this.ini = ini ?? throw new ArgumentNullException(nameof(ini));
+            _ini = ini ?? throw new ArgumentNullException(nameof(ini));
             ColorName = colorName;
             SizeName = sizeName;
         }
@@ -30,12 +30,21 @@ namespace Craftplacer.Windows.VisualStyles
             {
                 sectionName = sectionName.ToLowerInvariant();
 
-                if (!sectionCache.ContainsKey(sectionName))
+                if (!_sectionCache.ContainsKey(sectionName))
                 {
-                    sectionCache[sectionName] = CreateElement(ini[sectionName]);
+                    var section = _ini[sectionName];
+
+                    if (section == null)
+                    {
+                        _sectionCache[sectionName] = null;
+                    }
+                    else
+                    {
+                        _sectionCache[sectionName] = CreateElement(section);
+                    }
                 }
 
-                return sectionCache[sectionName];
+                return _sectionCache[sectionName];
             }
         }
 
