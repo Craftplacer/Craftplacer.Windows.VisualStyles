@@ -19,6 +19,7 @@ namespace Craftplacer.Windows.VisualStyles
     /// </summary>
     public class VisualStyle : IDisposable
     {
+        private readonly Encoding _encoding = Encoding.Unicode;
         private readonly HINSTANCE hModule;
         private readonly IniFile themeIni;
         private bool disposedValue;
@@ -41,7 +42,7 @@ namespace Craftplacer.Windows.VisualStyles
             }
 
             var buffer = LoadResource("THEMES_INI", "TEXTFILE");
-            var text = Encoding.Unicode.GetString(buffer);
+            var text = _encoding.GetString(buffer);
             text = FilterComments(text);
             themeIni = IniParser.Parse(text);
             var docsSection = themeIni["documentation"];
@@ -71,7 +72,7 @@ namespace Craftplacer.Windows.VisualStyles
             get
             {
                 var buffer = LoadResource("#1", "COLORNAMES");
-                var text = Encoding.Unicode.GetString(buffer);
+                var text = _encoding.GetString(buffer);
                 var colorNames = text.Split('\0', StringSplitOptions.RemoveEmptyEntries);
                 return colorNames;
             }
@@ -94,7 +95,7 @@ namespace Craftplacer.Windows.VisualStyles
             get
             {
                 var buffer = LoadResource("#1", "SIZENAMES");
-                var text = Encoding.Unicode.GetString(buffer);
+                var text = _encoding.GetString(buffer);
                 var colorNames = text.Split('\0', StringSplitOptions.RemoveEmptyEntries);
                 return colorNames;
             }
@@ -139,7 +140,7 @@ namespace Craftplacer.Windows.VisualStyles
         public ColorScheme GetColorScheme(string iniFileName, string colorName, string sizeName)
         {
             var buffer = LoadResource(iniFileName, "TEXTFILE");
-            var text = Encoding.Unicode.GetString(buffer);
+            var text = _encoding.GetString(buffer);
 
             text = FilterComments(text);
 
