@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -14,6 +15,7 @@ namespace Craftplacer.Windows.VisualStyles
 
             if (imageIndex.HasValue)
             {
+                imageIndex = Math.Clamp(imageIndex.Value, 0, element.ImageCount - 1);
                 bitmap = element.GetBitmaps()[imageIndex.Value];
             }
             else
