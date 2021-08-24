@@ -31,7 +31,7 @@ namespace Craftplacer.Windows.VisualStyles
             if (element.TextShadowType == TextShadowType.Continuous)
             {
                 uint textColor = (uint)Get0BGR(element.TextColor.Value);
-                uint shadowColor = (uint)Get0BGR(element.TextShadowColor.Value);
+                uint shadowColor = (uint)Get0BGR(element.TextShadowColor ?? Color.Transparent);
 
                 HDC hdc = new HDC(graphics.GetHdc());
                 HGDIOBJ hFont = new HGDIOBJ(element.Font.ToHfont());
