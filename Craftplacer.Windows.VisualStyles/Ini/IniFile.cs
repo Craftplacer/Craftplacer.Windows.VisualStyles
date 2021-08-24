@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,9 +13,9 @@ namespace Craftplacer.Windows.VisualStyles.Ini
             Sections = sections;
         }
 
-        public IniSection this[string sectionName]
+        public IniSection this[string sectionName] => Sections.FirstOrDefault(section =>
         {
-            get => Sections.First(section => section.Name == sectionName);
-        }
+            return section.Name.Equals(sectionName, StringComparison.OrdinalIgnoreCase);
+        });
     }
 }

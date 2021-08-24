@@ -1,14 +1,24 @@
 ﻿using Craftplacer.Windows.VisualStyles.Enums;
 
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Craftplacer.Windows.VisualStyles
 {
     internal static class Helpers
     {
+        public static T CaseInsensitiveGet<T>(this Dictionary<string, T> dictionary, string key)
+        {
+            return dictionary.FirstOrDefault(kv =>
+            {
+                return kv.Key.Equals(key, StringComparison.OrdinalIgnoreCase);
+            }).Value;
+        }
+
         public static Bitmap ChangePixelFormat(this Bitmap bitmap, PixelFormat pixelFormat)
         {
             Bitmap result = new Bitmap(bitmap.Width, bitmap.Height, pixelFormat);

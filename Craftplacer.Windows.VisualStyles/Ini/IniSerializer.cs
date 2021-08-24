@@ -2,6 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.Linq;
 using System.Reflection;
 
 namespace Craftplacer.Windows.VisualStyles.Ini
@@ -22,24 +25,23 @@ namespace Craftplacer.Windows.VisualStyles.Ini
                 }
 
                 var key = attribute.Name ?? property.Name;
-                string value;
+                string value = Helpers.CaseInsensitiveGet(data, key);
 
-                if (data.ContainsKey(key))
+                if (value == null)
                 {
-                    value = data[key];
-                }
-                else if (attribute.DefaultValue != null)
-                {
-                    value = attribute.DefaultValue;
-                }
-                else
-                {
-                    continue;
+                    if (attribute.DefaultValue != null)
+                    {
+                        value = attribute.DefaultValue;
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
 
                 dynamic propertyValue = ParseValue(value, property.PropertyType);
 
-                if (propertyValue == null)
+                if (propertyValue.Equals(null))
                 {
                     continue;
                 }
@@ -48,11 +50,55 @@ namespace Craftplacer.Windows.VisualStyles.Ini
             }
         }
 
+        private static Color ParseColor(string value)
+        {
+            var values = value
+                .Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select((v) => byte.Parse(v))
+                .ToArray();
+
+            return Color.FromArgb(values[0], values[1], values[2]);
+        }
+
+        private static Padding ParsePadding(string value)
+        {
+            var values = value
+                .Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select((v) => int.Parse(v))
+                .ToArray();
+
+            return new(values[0], values[2], values[1], values[3]);
+        }
+
+        private static Point ParsePoint(string value)
+        {
+            if (value == null)
+            {
+                return Point.Empty;
+            }
+
+            var values = value
+               .Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (int.TryParse(values[0], out var x) && int.TryParse(values[1], out var y))
+            {
+                return new Point(x, y);
+            }
+
+            return Point.Empty;
+        }
+
         private static dynamic ParseValue(string value, Type propertyType)
         {
-            if (propertyType == typeof(bool) && bool.TryParse(value, out var result))
+            var nulledType = Nullable.GetUnderlyingType(propertyType);
+            if (nulledType != null)
             {
-                return result;
+                propertyType = nulledType;
+            }
+
+            if (propertyType == typeof(bool) && bool.TryParse(value, out var boolResult))
+            {
+                return boolResult;
             }
 
             if (propertyType.IsEnum)
@@ -64,6 +110,28 @@ namespace Craftplacer.Windows.VisualStyles.Ini
             {
                 return value;
             }
+
+            if (propertyType == typeof(Color))
+            {
+                return ParseColor(value);
+            }
+
+            if (propertyType == typeof(Padding))
+            {
+                return ParsePadding(value);
+            }
+
+            if (propertyType == typeof(Point))
+            {
+                return ParsePoint(value);
+            }
+
+            if (propertyType == typeof(int) && int.TryParse(value, out var intResult))
+            {
+                return intResult;
+            }
+
+            Debugger.Break();
 
             return null;
         }
