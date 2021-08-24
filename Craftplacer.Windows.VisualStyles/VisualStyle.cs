@@ -3,7 +3,6 @@
 using System;
 using System.ComponentModel;
 using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -26,9 +25,11 @@ namespace Craftplacer.Windows.VisualStyles
 
         public VisualStyle(string vsPath)
         {
+            Path = vsPath;
+
             unsafe
             {
-                fixed (char* lpLibFileName = vsPath)
+                fixed (char* lpLibFileName = Path)
                 {
                     hModule = PInvoke.LoadLibraryEx(lpLibFileName, new HANDLE(), LOAD_LIBRARY_FLAGS.LOAD_LIBRARY_AS_DATAFILE);
                 }
@@ -86,6 +87,8 @@ namespace Craftplacer.Windows.VisualStyles
 
         public DateTime LastUpdated { get; private set; }
 
+        public string Path { get; }
+
         public string[] SizeNames
         {
             get
@@ -115,7 +118,7 @@ namespace Craftplacer.Windows.VisualStyles
         /// <returns>The translated resource name (like "BLUE_BUTTON_BMP")</returns>
         public static string GetResourceName(string filePath)
         {
-            var invalidChars = Path.GetInvalidFileNameChars().Append('.');
+            var invalidChars = System.IO.Path.GetInvalidFileNameChars().Append('.');
             var filteredFilePathChars = filePath.Select((c) => invalidChars.Contains(c) ? '_' : c);
             var filteredFilePath = new string(filteredFilePathChars.ToArray());
             return filteredFilePath.ToUpperInvariant();
@@ -133,7 +136,7 @@ namespace Craftplacer.Windows.VisualStyles
             return (section["DisplayName"], section["ToolTip"]);
         }
 
-        public ColorScheme GetColorScheme(string iniFileName)
+        public ColorScheme GetColorScheme(string iniFileName, string colorName, string sizeName)
         {
             var buffer = LoadResource(iniFileName, "TEXTFILE");
             var text = Encoding.Unicode.GetString(buffer);
@@ -142,13 +145,13 @@ namespace Craftplacer.Windows.VisualStyles
 
             var colorSchemeIni = IniParser.Parse(text);
 
-            return new ColorScheme(this, colorSchemeIni);
+            return new ColorScheme(this, colorSchemeIni, colorName, sizeName);
         }
 
         public ColorScheme GetColorScheme(string colorName, string sizeName)
         {
             var fileResName = GetIniName(colorName, sizeName);
-            return GetColorScheme(fileResName);
+            return GetColorScheme(fileResName, colorName, sizeName);
         }
 
         public ColorScheme[] GetColorSchemes()

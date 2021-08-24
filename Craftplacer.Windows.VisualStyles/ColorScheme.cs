@@ -10,13 +10,19 @@ namespace Craftplacer.Windows.VisualStyles
         private readonly IniFile ini;
         private readonly Dictionary<string, Element> sectionCache = new Dictionary<string, Element>();
 
-        internal ColorScheme(VisualStyle visualStyle, IniFile ini)
+        internal ColorScheme(VisualStyle visualStyle, IniFile ini, string colorName, string sizeName)
         {
             VisualStyle = visualStyle;
             this.ini = ini ?? throw new ArgumentNullException(nameof(ini));
+            ColorName = colorName;
+            SizeName = sizeName;
         }
 
         public VisualStyle VisualStyle { get; }
+
+        public string ColorName { get; }
+
+        public string SizeName { get; }
 
         public Element this[string sectionName]
         {
