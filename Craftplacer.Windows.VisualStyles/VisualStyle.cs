@@ -236,7 +236,8 @@ namespace Craftplacer.Windows.VisualStyles
             var resSize = PInvoke.SizeofResource(hModule, hResInfo);
 
             var buffer = new byte[resSize];
-            Marshal.Copy((IntPtr)hResData.ToInt32(), buffer, 0, buffer.Length);
+            var source = (IntPtr)hResData;
+            Marshal.Copy(source, buffer, 0, buffer.Length);
 
             return buffer;
         }
